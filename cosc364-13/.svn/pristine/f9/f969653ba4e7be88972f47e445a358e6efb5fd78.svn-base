@@ -1,0 +1,173 @@
+import socket
+import select
+import sys
+import time
+import random
+
+# Global Variables: Information from the Config
+own_id = -1
+output_ports = []
+input_ports = []
+
+def print_table(table):
+    ''' Prints the routing table in a readable format
+        @param table: dictionary representing the routing table '''
+    routerids = sorted(table.keys())
+    print("ROUTING TABLE:")
+    for i in range(0, len(table)):
+        print( str(routerids[i]) + " : " + str(table[routerids[i]]) )
+
+def routing_table(filenm):
+    ''' Reads the config from the config file and builds the routing table
+        from it. '''
+    global own_id
+
+    print("----- Reading Configuration File")
+    total = []
+    table = {}
+    c1=open(filenm, 'r')
+    for i in c1.readlines():
+        i=i.split(', ')
+        total.append(i)
+    print(total[0]) 
+    own_id = int(total[0][1])
+    print("Router-id: " + str(own_id))
+        
+    for i in range(1, len(total[1])):
+        input_ports.append(int(total[1][i]))
+    print ("Input Ports: " + str(input_ports))
+
+    for i in range(1,len(total[2])):
+        temp = total[2][i]
+        temp = temp.split('-')
+        router_id = int(temp[-1])
+        portno = int(temp[0])
+        output_ports.append(portno)
+        first_router = router_id
+        metric = int(temp[-2])
+        flag = 0
+        timers = [0, 0]
+                
+        # Layout of this table is [ID: [FIRST-ROUTER,COST,FLAG,TIMER]]
+        table[router_id] = [first_router, metric, flag, timers] 
+    print("Output Ports: " + str(output_ports))
+    print_table(table)
+    print("----- Finished reading configuration file.\n")
+    return table
+
+def router_hashkey(t):
+    ''' Returns a list of keys from the routing table
+        @param t: dictionary representing the routing table '''
+    hashkey=[]
+    table = t
+    if table != None:
+        for y in table.keys():
+            hashkey.append(y)
+        return hashkey
+    else:
+        return hashkey
+
+def listenlist():
+    l_list=[]
+    for i in range(0, len(input_ports)):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('', int(input_ports[i]) ))        
+        l_list.append(sock)
+    return l_list
+
+def id_in_list(rec_id, table):
+    ''' Checks whether or not the given router_id exists in the routing
+        table
+        @param rec_id: ID of the router we are checking
+        @param table: dictionary representing the routing table '''
+
+    key = router_hashkey(table)
+    if rec_id in key:
+        return True
+    else:
+        return False
+
+def receiver(rt_table, timeout):
+    ''' Checks the sockets to see if any messages have been received.
+        @param rt_table: dictionary representing the routing table
+    '''
+    print("--- Checking for packets")
+    socket_list = listenlist() 
+    table_key = []
+    table = rt_table
+    timeout = random.randint(1,5) 
+    a,b,c = select.select(socket_list,[],[], timeout)
+    if a != []:
+        s = a[0]
+        s.settimeout(10)
+        data,addr = s.recvfrom(1024)
+        print("----- received message: " + str(data))
+        data = str(data)
+        data = data.replace("b","").replace("'","")
+        data = data.split(',')
+        src = int(data[2])
+        start = 3
+        while start < len(data):
+            rec_id = int(data[start]) 
+            router_id = int(data[start])
+            metric = min(int(data[start+1]) + table[src][2], 16)
+            if not id_in_list(rec_id, table):
+                table[router_id] = ['empty', src, metric, 0, [0,0]]
+            else:
+                if metric < table[router_id][2]:
+                    table[router_id][2] = metric
+            start += 2
+        print_table(table)
+        print("----- finished reading message.")
+    print("--- Finished checking for packets. \n")
+    return table
+
+def create_message(t):
+    ''' Creates message with information about
+        routing table
+
+        @param t: dictionary representing the routing table
+    '''
+
+    table = t # {}
+    command = "2" # Command No.: 2
+    version = "2" # Version No.: 2
+    source = own_id
+    key = router_hashkey(table)
+    head = command + ',' + version + ','+ str(source)
+    result = head
+   
+    for i in key:
+        value = table[i]
+        result += ',' + str(i) + ','
+        result += str(value[2])
+    print("Created message to send: " + str(result))
+    return result
+
+def send_message(table):
+    ''' Sends an update message to all direct neighbours
+        @param table: dictionary representing the routing table '''
+    print("----- Sending update message to all direct neighbours")
+    msg = create_message(table)
+    msg = msg.encode('utf-8')
+    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    for port in output_ports:
+        if (sock.sendto(msg, ("0.0.0.0", port))):
+            print("Sent packet to port: " + str(port))
+    print("----- Finished sending update message.\n")
+
+def run():
+    counter = 0
+    stop = False
+    rt_table = routing_table(sys.argv[1])
+    while not stop:
+        print("loop " + str(counter))
+        timeout = 10 + random.randint(-3, 3)
+        rt_table = receiver(rt_table, timeout) 
+        send_message(rt_table)
+        counter += 1
+    return 0
+
+if __name__ == "__main__":
+    run()

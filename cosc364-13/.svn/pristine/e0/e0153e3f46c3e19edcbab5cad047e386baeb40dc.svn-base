@@ -1,0 +1,34 @@
+import socket
+import select
+import sys
+
+def listenlist():
+    l_list=[]
+    o = open("Port.txt",'r')
+    total = o.readline().split(',')
+    count = len(total)
+    
+    for i in range(0,count):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('', int(total[i]) ))        
+        l_list.append(sock)
+    o.close()
+    return l_list
+    
+def receiver():
+    socket_list = listenlist()
+    # for socket in socket_list:
+    #    print(socket.getsockname())
+    a,b,c = select.select(socket_list,[],[],5)
+    print(a)
+    print("done")
+    if a != []:
+        s = a[0]
+        s.settimeout(10)
+        data,addr = s.recvfrom(1024)
+        data = str(data)
+        data = data.replace("b","")
+        print ("haha: " + data)
+    
+if __name__ == "__main__":
+    receiver()

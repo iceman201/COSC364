@@ -1,0 +1,27 @@
+def routing_table(num):
+    total = []
+    table = {}
+    string = 'config_' + str(num) + '.txt'
+    print (string)
+    c1=open(string,'r')
+    for i in c1.readlines():
+        i=i.split(', ')
+        total.append(i)
+        
+    for i in range(1,len(total[2])-1):
+        temp = total[2][i]
+        temp = temp.split('-')
+        table[int(temp[-1])] = [temp[0],0,temp[-2],0,0] #layout of this table is [ID:[FIRST-ROUTER,COST,FLAG,TIMER]]
+        print(temp)
+    print(table)
+    
+def haha():
+    path = [1]
+    for i in range(1,8):
+        #path[i]
+        
+        routing_table(i)
+        #print(path[i])
+        #   print(len(total[2]))
+#routing_table(1)
+haha()

@@ -1,0 +1,77 @@
+import socket
+import select
+import sys
+
+def routing_table(num):
+    total = []
+    table = {}
+    name = 'config_' + str(num) + '.txt'
+    print(name)
+    c1=open(name,'r')
+    for i in c1.readlines():
+        i=i.split(', ')
+        total.append(i)
+
+    for i in range(1,len(total[2])):
+        temp = total[2][i]
+        temp = temp.split('-')
+        table[int(temp[-1])] = [temp[0],0,temp[-2],0,0] #layout of this table is [ID:[FIRST-ROUTER,COST,FLAG,TIMER]]
+        print(temp)
+    return table
+
+def router_hashkey(i):
+    hashkey=[]   
+    for y in routing_table(i).keys():
+        hashkey.append(y)
+    return hashkey
+
+def listenlist():
+    l_list=[]
+    o = open("Port.txt",'r')
+    total = o.readline().split(',')
+    count = len(total)
+    
+    for i in range(0,count):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('', int(total[i]) ))        
+        l_list.append(sock)
+    o.close()
+    return l_list
+
+def checklist(rec_id, num):
+    key = router_hashkey(num)
+    if rec_id in key:
+        return 1
+    else:
+        return 0
+
+def receiver():
+    socket_list = listenlist()
+    table_key = []
+    table = {}
+    a,b,c = select.select(socket_list,[],[],5)
+    for socket in socket_list:
+        print(socket.getsockname())
+    print(a)
+    print("done")
+
+    if a != []:
+        s = a[0]
+        s.settimeout(10)
+        data,addr = s.recvfrom(1024)
+        data = str(data)
+        data = data.replace("b","")
+        print ("haha: " + data)
+        rec_id = int(data[1])
+        num = 1
+        if checklist(rec_id, num) == 1:
+            table_key1 = router_hashkey(num)
+            table_key2 = router_hashkey(rec_id)            
+            table_key2.remove(num)
+            table_key1 += table_key2
+            
+            print(table_key1)
+
+if __name__ == "__main__":
+    receiver()
+    #print(router_hashkey(1))

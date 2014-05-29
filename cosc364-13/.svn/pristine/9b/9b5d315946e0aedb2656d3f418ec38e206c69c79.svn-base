@@ -1,0 +1,106 @@
+import socket
+import select
+import sys
+
+num = 1
+
+def routing_table(num):
+    total = []
+    table = {}
+    name = 'config_' + str(num) + '.txt'
+    #print(name)
+    c1=open(name,'r')
+    for i in c1.readlines():
+        i=i.split(', ')
+        total.append(i)
+
+    for i in range(1,len(total[2])):
+        temp = total[2][i]
+        temp = temp.split('-')
+        table[int(temp[-1])] = [temp[0],int(temp[-1]),int(temp[-2]),0,0] #layout of this table is [ID:[FIRST-ROUTER,COST,FLAG,TIMER]]
+        #print(temp)
+    return table
+
+def router_hashkey(t):
+    hashkey=[]
+    table = t
+    for y in table.keys():
+        hashkey.append(y)
+    return hashkey
+
+def listenlist():
+    l_list=[]
+    o = open("Port.txt",'r')
+    total = o.readline().split(',')
+    count = len(total)
+    
+    for i in range(0,count):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('', int(total[i]) ))        
+        l_list.append(sock)
+    o.close()
+    return l_list
+
+def checklist(rec_id, num):
+    key = router_hashkey(routing_table(num))
+    if rec_id not in key:
+        return 1
+    else:
+        return 0
+
+def receiver(table1):
+    socket_list = listenlist()
+    table_key = []
+    table = table1
+    a,b,c = select.select(socket_list,[],[],5)
+    #for socket in socket_list:
+        #print(socket.getsockname())
+    print(a)
+    print("done")
+    if a != []:
+        s = a[0]
+        s.settimeout(10)
+        data,addr = s.recvfrom(1024)
+        data = str(data)
+        data = data.replace("b","").replace("'","")
+        data = data.split(',')
+        start = 3
+        while start != len(data):
+            rec_id = int(data[start]) 
+            #print(data)
+            if checklist(rec_id, num) == 1:
+                metric = int(data[start+1]) + table[int(data[2])][2]
+                table[int(data[start])] = ['port',int(data[2]),metric,0,0] #routing_table(int(data[1]))[int(data[2])]
+                #print(table[int(data[2])][2])
+                start+=2
+        return table
+
+def create_message(t):
+    ''' Creates message with information about
+        routing table
+        '''
+    table = t#{}
+    command = "2" # Command No.: 2
+    version = "2" # Version No.: 2
+    source = num
+    key = router_hashkey(table)
+    head = command + ',' + version + ','+ str(source)
+    result = head
+    for i in key:
+        value = table[i]
+        result += ',' + str(i) + ','
+        result += str(value[2])
+    print(table)
+    return result
+    
+def run():
+    stop = 0
+    while stop != '0':
+        print(receiver(routing_table(1)))
+        stop = input("lalala:")
+    return 0
+if __name__ == "__main__":
+    #receiver(routing_table(1))
+    #run()
+    print(create_message(receiver(routing_table(1))))
+    #print(router_hashkey(1))

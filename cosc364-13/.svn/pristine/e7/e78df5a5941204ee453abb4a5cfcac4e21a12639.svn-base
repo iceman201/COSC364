@@ -1,0 +1,42 @@
+import socket
+
+def get_ID():
+    i = open("config.txt")
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def get_port():
+    i = open("config.txt")
+    result = i.readline()
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def sender():
+
+    # Done in Hex Strings
+    # Header
+    command = "2" # Command No.: 2
+    version = "2" # Version No.: 2 
+    src_router = "2"
+    head = command + "," + version + "," + src_router
+    msg = head
+
+    entryvalues = [(3,3),(4,6),(8,20)]
+
+    for pair in entryvalues:
+        msg += "," + str(pair[0]) + "," + str(pair[1])
+
+    print(msg)
+    msg = msg.encode('utf-8')
+    
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = 41154
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if (sock.sendto(msg, (UDP_IP, UDP_PORT))):
+        print("sented")
+    return 0
+
+if __name__ == "__main__":
+    sender()

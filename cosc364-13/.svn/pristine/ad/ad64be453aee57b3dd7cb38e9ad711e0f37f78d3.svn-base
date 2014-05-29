@@ -1,0 +1,32 @@
+ROUTING DAEMON PROGRAM
+
+STORE A ROUTING TABLE
+Should contain one entry for each destination. Each entry contains:
+	(ID) Destination IP Address
+	First router along the route to the destination
+	Metric/Cost of getting to the destination
+	Route Change Flag (Boolean)
+	Value of timers.
+	
+TIMERS
+Every 30 seconds
+	Send "update message" to every neighbouring router.
+		This update mesage should contain the routing table, 
+		EXCEPT for reverse routes.
+		eg.
+		if there is a route A->B->C->D, A does not tell B or C
+		that it has a route to D.
+If we haven't received an "update message" from router 'G'  for 180 seconds
+	Start 120 second timer (Garbage Collection Timer)
+	Set metric for router 'G' to 16 
+	Toggle "route change" flag in routing table for router 'G'
+	If we receive update message from router 'G':
+		Update routing table
+		Clear Garbage Collection Timer
+	Send "update message"
+
+RECEIVING UPDATE MESSAGES
+Router should be able to receive messages at any point. Either using 
+timer, threading or callback function.
+	Analyse Message
+	Update Routing Table if necessary

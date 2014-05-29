@@ -1,0 +1,108 @@
+import random as rm
+
+def write_Router_ID():
+    w = open('Router-ID.txt','w')
+    i = 1
+    for i in range(1,64001):
+        w.write(str(i))
+        w.write("\n")
+    return 0
+#-------------------------------------------------------------------------------------------------------------#        
+def write_Port_number():
+    w = open('Port.txt','w')
+    n_portno = 5;
+    for i in range(n_portno):
+        w.write(str(rm.randint(1024,64000)) + "," + str(rm.randint(1024,64000)) + "," + str(rm.randint(1024,64000)))
+        if i < n_portno-1:
+            w.write(",")
+    return 0
+#-------------------------------------------------------------------------------------------------------------#
+def write_Outputs_1():
+    w = open('Outputs_1.txt','w')
+    r = open('Port.txt', 'r')
+    R_id = open('Router-ID.txt', 'r')
+    strn = r.readline().split(',')
+    for num in strn:
+        num = int(num)
+        output = rm.randint(1024,64000)
+        if output != num:
+            w.write(str(output) + '-' + str(rm.randint(1,5)) + '-' + str(R_id.readline()))
+    return 0
+#-------------------------------------------------------------------------------------------------------------#
+def crate_Output_2():
+    o = open('Outputs_1.txt', 'r') #input
+    p = open('Port.txt','r')
+    o2 = open('Output2.txt', 'w')
+
+    ID1 = o.readlines()
+    portno = p.readline().split(',') #picks first, change later?
+    ID = []
+    for line1 in ID1:
+        ID.append(line1.split('-'))
+        list_indices = int(ID[-1][-1]) - 1
+        o2.write(str(portno[list_indices]) + '-' + str(ID[-1][-2])+ '-' + str(ID[-1][-1]))
+    return 0
+#-------------------------------------------------------------------------------------------------------------#
+def step2 ():
+    start = 0
+    while (start == 0):
+        step_2 = input("Type 1 or 2 for read output files(A) or (B) otherwise type 3: ")
+        if step_2 == '1':
+            output1 = open('Outputs_1.txt', 'r')
+            for i in output1.readlines():
+                print ("port/metric/ID")
+                print (i)
+            output1.close();
+            step_2 = 0
+        elif step_2 == '2':
+            output2 = open('Output2.txt', 'r')            
+            for i in output2.readlines():
+                print ("port/metric/ID")
+                print (i)
+            output2.close();
+            step_2 = '0'
+        elif step_2 == '3':
+            start = 1
+        else:
+            print ("Wrong output number")
+            print ("type 1 for output_1(A), type 2 for output_2(B)")
+            print ("Otherwise type 3 for other option")
+    return 1
+#-------------------------------------------------------------------------------------------------------------#
+def config_router1():
+    o1 = open('Outputs_1.txt', 'r')
+    op = open('Port.txt','r')
+    oi = open('Router-ID.txt','r')
+    result = open('config.txt','w')
+    
+    ID = oi.readline()
+    PORT = op.readline().split(',')
+    OUTPUT = o1.readline()
+    
+    result.write("Router-ID " + str(ID) + "Input-ports " + str(PORT[0]) + '\n' + "Outputs " + str(OUTPUT) + '\n')
+    
+    return 0
+#-------------------------------------------------------------------------------------------------------------#
+def display():
+    start = 0
+    while (start == 0): # for start looping
+        step1 = input("Type 'y' automatically creation start: ")
+        if step1 == 'y':
+            write_Router_ID()
+            write_Port_number()
+            write_Outputs_1()
+            crate_Output_2()
+            print ("all files created")
+            if step2() == 1:
+                print ('which ')
+                start = 1
+        else:
+            print ("command invalid")
+
+if __name__ == "__main__":
+    write_Router_ID()
+    write_Port_number()
+    write_Outputs_1()
+    crate_Output_2()
+    config_router1()
+    display()

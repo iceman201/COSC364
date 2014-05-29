@@ -1,0 +1,34 @@
+import random as rm
+
+
+def write_Router_ID():
+    w = open('Router-ID.txt','w')
+    i = 1
+
+    for i in range(1,64001):
+        w.write(str(i))
+        w.write("\n")
+        
+def write_Port_number():
+    w = open('Port.txt','w')
+    for i in range(5):
+        w.write(str(rm.randint(1024,64000)) + "," + str(rm.randint(1024,64000)) + "," + str(rm.randint(1024,64000)))
+        w.write("\n")
+
+def write_Outputs():
+    w = open('Outputs.txt','w')
+    r = open('Port.txt','r')
+    for i in range(5):
+        strn = r.readline().split(',')
+        for num in strn:
+            num = int(num)
+            output = rm.randint(1024,64000)
+            if output != num:
+                r_id = open(
+                w.write(str(output) + '-' + str(rm.randint(1,5)) + 
+    
+    
+    
+    
+write_Outputs()
+q

@@ -1,0 +1,28 @@
+import socket
+
+def get_ID():
+    i = open("config.txt")
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def get_port():
+    i = open("config.txt")
+    result = i.readline()
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def sender():
+    Message = "suck it"
+    Message = Message.encode('utf-8')
+    
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = 39995
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if (sock.sendto(Message, (UDP_IP, UDP_PORT))):
+        print("sented")
+    return 0
+
+if __name__ == "__main__":
+sender()

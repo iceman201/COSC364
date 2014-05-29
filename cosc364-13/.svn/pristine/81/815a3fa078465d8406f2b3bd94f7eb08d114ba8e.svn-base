@@ -1,0 +1,120 @@
+import socket
+import select
+import sys
+
+num = 2
+
+def get_ID():
+    i = open("config.txt")
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def get_port():
+    i = open("config.txt")
+    result = i.readline()
+    result = i.readline().split(' ')
+    result[-1] = result[-1].strip()
+    return result[-1]
+
+def create_message():
+    command = "2" # Command No.: 2
+    version = "2" # Version No.: 2 
+    src_router = "2"
+    head = command + "," + version + "," + src_router
+    msg = head
+    entryvalues = [(3,3),(4,6)]
+
+    for pair in entryvalues:
+        msg += "," + str(pair[0]) + "," + str(pair[1])
+
+    return msg    
+
+def sender(msg):
+    # Done in Hex Strings
+    # Header
+    msg = msg.encode('utf-8')
+    
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = 41154
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if (sock.sendto(msg, (UDP_IP, UDP_PORT))):
+        print("sent")
+    return 0
+
+def routing_table(num):
+    total = []
+    table = {}
+    name = 'config_' + str(num) + '.txt'
+    #print(name)
+    c1=open(name,'r')
+    for i in c1.readlines():
+        i=i.split(', ')
+        total.append(i)
+
+    for i in range(1,len(total[2])):
+        temp = total[2][i]
+        temp = temp.split('-')
+        table[int(temp[-1])] = [temp[0],int(temp[-1]),int(temp[-2]),0,0] #layout of this table is [ID:[FIRST-ROUTER,COST,FLAG,TIMER]]
+        #print(temp)
+    return table
+
+def checklist(rec_id, num):
+    key = router_hashkey(routing_table(num))
+    if rec_id not in key:
+        return 1
+    else:
+        return 0
+    
+def router_hashkey(t):
+    hashkey=[]
+    table = t
+    if table != None:
+        for y in table.keys():
+            hashkey.append(y)
+        return hashkey
+    else:
+        return hashkey
+
+def listenlist():
+    l_list=[]
+#     o = open("Port.txt",'r')
+#     total = o.readline().split(',')
+#     count = len(total)
+    
+#     for i in range(0,count):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('', 16267 ))        
+    l_list.append(sock)
+#     o.close()
+    return l_list
+
+def receiver(table1):
+    socket_list = listenlist()
+    table_key = []
+    table = table1
+    a,b,c = select.select(socket_list,[],[],5)
+    print(a)
+    print("done")
+    if a != []:
+        s = a[0]
+        s.settimeout(10)
+        data,addr = s.recvfrom(1024)
+        data = str(data)
+        data = data.replace("b","").replace("'","")
+        data = data.split(',')
+        start = 3
+        while start != len(data):
+            rec_id = int(data[start]) 
+            #print(data)
+            if checklist(rec_id, num) == 1:
+                metric = int(data[start+1]) + table[int(data[2])][2]
+                table[int(data[start])] = ['empty',int(data[2]),metric,0,0]
+                #print(table[int(data[2])][2])
+                start+=2
+        print(table)
+        return table
+
+if __name__ == "__main__":
+    sender(create_message())
+    receiver(routing_table(num))
